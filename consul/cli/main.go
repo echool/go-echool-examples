@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"strconv"
 	"time"
 
@@ -12,8 +10,10 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/echool/go-echool"
+	"github.com/echool/go-echool-examples/logger"
 	"github.com/echool/go-echool/config"
 	sd "github.com/echool/go-echool/discovery/consul"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
 )
 
@@ -29,7 +29,7 @@ func main() {
 
 	creds, err := credentials.NewClientTLSFromFile(tlsCertfile, serviceName)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	conf := config.ConsulCliConf{
@@ -40,9 +40,11 @@ func main() {
 	target := sd.NewResolver(conf)
 
 	grpcClient := echool.NewClient(target)
-	conn, err := grpcClient.GetConnection(grpc.WithTransportCredentials(creds))
+	conn, err := grpcClient.GetConnection(
+		grpc.WithTransportCredentials(creds),
+	)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	cli := message.NewMessSrvClient(conn)
@@ -60,18 +62,24 @@ func main() {
 			},
 		})
 		if err != nil {
-			log.Fatal(err)
+			logger.Log.Error("Send", zap.Error(err))
+		} else {
+			logger.Log.Info("Send", zap.Bool("Result", sendRs.Result))
 		}
-		fmt.Println(sendRs.Result)
 
 		// call Receive
 		recRs, err := cli.Receive(ctx, &message.Empty{})
 		if err != nil {
-			log.Fatalln(err)
-		}
-
-		for _, item := range recRs.Userinfo {
-			fmt.Println(item.Userid, item.Username, item.Intro)
+			logger.Log.Error("Receive", zap.Error(err))
+		} else {
+			for _, item := range recRs.Userinfo {
+				logger.Log.Info(
+					"Receive Userinfos",
+					zap.Int32("Userid", item.Userid),
+					zap.String("Username", item.Username),
+					zap.String("Intro", item.Intro),
+				)
+			}
 		}
 
 		time.Sleep(time.Second * 3)

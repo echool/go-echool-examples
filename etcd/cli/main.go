@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"time"
 
 	"google.golang.org/grpc"
@@ -11,8 +9,10 @@ import (
 	"github.com/echool/go-echool-examples/proto/knowing"
 
 	"github.com/echool/go-echool"
+	"github.com/echool/go-echool-examples/logger"
 	"github.com/echool/go-echool/config"
 	sd "github.com/echool/go-echool/discovery/etcd"
+	"go.uber.org/zap"
 )
 
 var (
@@ -31,7 +31,7 @@ func main() {
 	grpcClient := echool.NewClient(target)
 	conn, err := grpcClient.GetConnection(grpc.WithInsecure())
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	regionHandlerClient := knowing.NewRegionHandlerClient(conn)
 
@@ -41,9 +41,11 @@ func main() {
 			&knowing.FindRequest{Tokens: []string{"a_"}},
 		)
 		if err != nil {
-			log.Fatal(err)
+			logger.Log.Error("Result", zap.Error(err))
+		} else {
+			logger.Log.Info("Result", zap.Any("Items", res.Items))
 		}
-		fmt.Println(res)
-		time.Sleep(2 * time.Second) // 每两次请求一次knowing的rpc服务
+
+		time.Sleep(2 * time.Second)
 	}
 }

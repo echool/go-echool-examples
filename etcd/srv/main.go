@@ -40,7 +40,7 @@ func startServer(count int) {
 	demo := &RegionHandlerServer{Address: serviceAddr}
 	register, err := sd.NewRegister(conf)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	grpcServer := echool.NewServer(register, func(server *grpc.Server) {

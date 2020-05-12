@@ -1,6 +1,6 @@
 module github.com/echool/go-echool-examples
 
-go 1.13
+go 1.14
 
 require (
 	github.com/echool/go-echool v1.0.0
